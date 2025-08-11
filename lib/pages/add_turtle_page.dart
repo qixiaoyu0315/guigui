@@ -467,7 +467,7 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
       initialDate: _selectedBirthDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
-      locale: const Locale('zh', 'CN'),
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
     );
     if (picked != null && picked != _selectedBirthDate) {
       setState(() {

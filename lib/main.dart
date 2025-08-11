@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'models/turtle_record.dart';
 import 'models/turtle.dart';
 import 'models/sort_option.dart';
@@ -28,6 +29,17 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      // 启用本地化，避免日期选择器在中文环境下卡死
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh', 'CN'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('zh', 'CN'),
       home: const TurtleGrowthHomePage(),
       debugShowCheckedModeBanner: false,
     );

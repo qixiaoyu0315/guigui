@@ -480,7 +480,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      locale: const Locale('zh', 'CN'),
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {

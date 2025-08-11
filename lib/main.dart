@@ -87,127 +87,140 @@ class _TurtleGrowthHomePageState extends State<TurtleGrowthHomePage> {
     }
   }
 
+  void _showTurtleSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('选择要显示的乌龟'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 全选/全不选
+                    CheckboxListTile(
+                      title: const Text('全选/全不选'),
+                      value: _selectedTurtleIds.length == _turtles.length,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            _selectedTurtleIds = _turtles.map((turtle) => turtle.id).toList();
+                          } else {
+                            _selectedTurtleIds.clear();
+                          }
+                        });
+                        setState(() {});
+                      },
+                    ),
+                    const Divider(),
+                    // 乌龟列表
+                    ..._turtles.map((turtle) {
+                      final isSelected = _selectedTurtleIds.contains(turtle.id);
+                      return CheckboxListTile(
+                        title: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: turtle.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(turtle.name)),
+                          ],
+                        ),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              _selectedTurtleIds.add(turtle.id);
+                            } else {
+                              _selectedTurtleIds.remove(turtle.id);
+                            }
+                          });
+                          setState(() {});
+                        },
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('完成'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: _turtles.isEmpty
-            ? const Row(
-                children: [
-                  Icon(
-                    Icons.pets,
-                    color: Colors.white,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    '乌龟生长记录',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+        title: Row(
+          children: [
+            const Icon(
+              Icons.pets,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 8),
+            if (_turtles.isEmpty)
+              const Text(
+                '乌龟生长记录',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               )
-            : Row(
-                children: [
-                  const Icon(
-                    Icons.pets,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: null,
-                        hint: Text(
-                          _selectedTurtleIds.length == _turtles.length
-                              ? '显示所有乌龟 (${_turtles.length})'
-                              : '已选择 ${_selectedTurtleIds.length} 只乌龟',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+            else
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _showTurtleSelectionDialog(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedTurtleIds.length == _turtles.length
+                                ? '显示所有乌龟 (${_turtles.length})'
+                                : '已选择 ${_selectedTurtleIds.length} 只乌龟',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
-                        dropdownColor: Colors.green.shade600,
-                        icon: const Icon(
+                        const SizedBox(width: 8),
+                        const Icon(
                           Icons.arrow_drop_down,
                           color: Colors.white,
                         ),
-                        items: [
-                          DropdownMenuItem<String>(
-                            value: 'all',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _selectedTurtleIds.length == _turtles.length
-                                      ? Icons.check_box
-                                      : Icons.check_box_outline_blank,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '全选/全不选',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ..._turtles.map((turtle) {
-                            final isSelected = _selectedTurtleIds.contains(turtle.id);
-                            return DropdownMenuItem<String>(
-                              value: turtle.id,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected ? Icons.check_box : Icons.check_box_outline_blank,
-                                    color: turtle.color,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: turtle.color,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      turtle.name,
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            if (value == 'all') {
-                              if (_selectedTurtleIds.length == _turtles.length) {
-                                _selectedTurtleIds.clear();
-                              } else {
-                                _selectedTurtleIds = _turtles.map((turtle) => turtle.id).toList();
-                              }
-                            } else if (value != null) {
-                              if (_selectedTurtleIds.contains(value)) {
-                                _selectedTurtleIds.remove(value);
-                              } else {
-                                _selectedTurtleIds.add(value);
-                              }
-                            }
-                          });
-                        },
-                      ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
+          ],
+        ),
         backgroundColor: Colors.green.shade600,
         elevation: 0,
         actions: [

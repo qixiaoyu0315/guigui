@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
 
 import 'database_helper.dart';
 
@@ -9,6 +12,20 @@ class BackupImportService {
   static Future<File> exportJsonBackup() async {
     final file = await DatabaseHelper.instance.exportJson();
     return file;
+  }
+
+  // 通过系统文件保存对话框导出（SAF），返回保存后的路径/URI（不同平台返回值可能不同）
+  static Future<String> exportJsonWithSystemPicker() async {
+    final jsonString = await DatabaseHelper.instance.exportJsonString();
+    final bytes = Uint8List.fromList(utf8.encode(jsonString));
+
+    final suggestedName = 'guigui_backup_${DateTime.now().millisecondsSinceEpoch}.json';
+    final savedPath = await FileSaver.instance.saveFile(
+      name: suggestedName,
+      bytes: bytes,
+      mimeType: MimeType.json,
+    );
+    return savedPath;
   }
 
   // 让用户选择一个JSON文件并导入

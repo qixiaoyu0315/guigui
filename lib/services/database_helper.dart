@@ -154,6 +154,39 @@ class DatabaseHelper {
 
   // Backup JSON
   Future<File> exportJson() async {
+    final jsonString = await exportJsonString();
+
+    // 目标目录：优先保存到系统 Downloads 目录（仅 Android 可用），其他平台使用应用文档目录
+    Directory dir;
+    try {
+      if (Platform.isAndroid) {
+        final dirs = await getExternalStorageDirectories(type: StorageDirectory.downloads);
+        if (dirs != null && dirs.isNotEmpty) {
+          dir = dirs.first;
+        } else {
+          // 兼容性回退
+          dir = (await getExternalStorageDirectory()) ?? (await getApplicationDocumentsDirectory());
+        }
+      } else {
+        dir = await getApplicationDocumentsDirectory();
+      }
+    } catch (_) {
+      // 任意异常回退到应用文档目录
+      dir = await getApplicationDocumentsDirectory();
+    }
+
+    final file = File(
+      p.join(
+        dir.path,
+        'guigui_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+      ),
+    );
+    await file.writeAsString(jsonString);
+    return file;
+  }
+
+  // 生成导出 JSON 字符串（不直接写文件），方便走系统保存对话框
+  Future<String> exportJsonString() async {
     final db = await database;
     final turtles = await db.query(tableTurtles);
     final records = await db.query(tableRecords);
@@ -164,16 +197,7 @@ class DatabaseHelper {
       'exportedAt': DateTime.now().toIso8601String(),
       'dbVersion': _dbVersion,
     };
-
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-      p.join(
-        dir.path,
-        'guigui_backup_${DateTime.now().millisecondsSinceEpoch}.json',
-      ),
-    );
-    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
-    return file;
+    return const JsonEncoder.withIndent('  ').convert(data);
   }
 
   Future<void> importJson(File jsonFile, {bool clearExisting = false}) async {

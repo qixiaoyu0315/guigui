@@ -70,10 +70,11 @@ class _TurtleManagementPageState extends State<TurtleManagementPage> {
             onPressed: () async {
               setState(() => _isLoading = true);
               try {
-                final file = await BackupImportService.exportJsonBackup();
+                // 使用系统保存对话框（公共目录/自定义目录）
+                final savedPath = await BackupImportService.exportJsonWithSystemPicker();
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('备份成功: ${file.path.split('/').last}')),
+                  SnackBar(content: Text(savedPath.isNotEmpty ? '备份成功: $savedPath' : '已取消保存')),
                 );
               } catch (e) {
                 if (!mounted) return;

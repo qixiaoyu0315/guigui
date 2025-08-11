@@ -3,6 +3,7 @@ import '../models/turtle.dart';
 import '../services/turtle_management_service.dart';
 import 'add_turtle_page.dart';
 import 'turtle_growth_chart_page.dart';
+import '../services/backup_import_service.dart';
 
 class TurtleManagementPage extends StatefulWidget {
   const TurtleManagementPage({Key? key}) : super(key: key);
@@ -62,6 +63,51 @@ class _TurtleManagementPageState extends State<TurtleManagementPage> {
         backgroundColor: Colors.green.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: '备份到JSON',
+            icon: const Icon(Icons.backup),
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              try {
+                final file = await BackupImportService.exportJsonBackup();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('备份成功: ${file.path.split('/').last}')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('备份失败: $e'), backgroundColor: Colors.red),
+                );
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
+            },
+          ),
+          IconButton(
+            tooltip: '从JSON导入',
+            icon: const Icon(Icons.upload_file),
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              try {
+                await BackupImportService.importFromJsonWithPicker(clearExisting: true);
+                await _loadTurtles();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('导入完成')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('导入失败: $e'), backgroundColor: Colors.red),
+                );
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? Center(

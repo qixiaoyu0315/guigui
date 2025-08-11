@@ -52,4 +52,35 @@ class TurtleRecord {
       notes: json['notes'],
     );
   }
+
+  // SQLite mapping
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'turtleId': turtleId,
+      'date': date.toIso8601String(),
+      'title': title,
+      'description': description,
+      'weight': weight,
+      'length': length,
+      'width': width,
+      'photoPath': photoPath,
+      'notes': notes,
+    };
+  }
+
+  factory TurtleRecord.fromMap(Map<String, dynamic> map) {
+    return TurtleRecord(
+      id: map['id'] as String,
+      turtleId: (map['turtleId'] ?? '') as String,
+      date: DateTime.parse(map['date'] as String),
+      title: map['title'] as String,
+      description: map['description'] as String,
+      weight: (map['weight'] as num?)?.toDouble(),
+      length: (map['length'] as num?)?.toDouble(),
+      width: (map['width'] as num?)?.toDouble(),
+      photoPath: map['photoPath'] as String?,
+      notes: map['notes'] as String?,
+    );
+  }
 }

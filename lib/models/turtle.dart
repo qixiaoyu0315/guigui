@@ -43,6 +43,31 @@ class Turtle {
     );
   }
 
+  // SQLite mapping
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'species': species,
+      'birthDate': birthDate.toIso8601String(),
+      'color': color.value,
+      'description': description,
+      'photoPath': photoPath,
+    };
+  }
+
+  factory Turtle.fromMap(Map<String, dynamic> map) {
+    return Turtle(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      species: map['species'] as String,
+      birthDate: DateTime.parse(map['birthDate'] as String),
+      color: Color((map['color'] as num).toInt()),
+      description: map['description'] as String?,
+      photoPath: map['photoPath'] as String?,
+    );
+  }
+
   // 预定义的颜色选项
   static const List<Color> availableColors = [
     Colors.green,

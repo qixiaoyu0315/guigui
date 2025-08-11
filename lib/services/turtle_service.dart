@@ -7,6 +7,11 @@ class TurtleService {
     return DatabaseHelper.instance.getAllRecords();
   }
 
+  // 根据乌龟ID获取记录列表
+  static Future<List<TurtleRecord>> getRecordsByTurtle(String turtleId) async {
+    return DatabaseHelper.instance.getRecordsByTurtle(turtleId);
+  }
+
   // 添加新记录
   static Future<void> addRecord(TurtleRecord record) async {
     await DatabaseHelper.instance.insertRecord(record);

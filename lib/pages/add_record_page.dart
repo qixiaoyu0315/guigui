@@ -35,6 +35,8 @@ class _AddRecordPageState extends State<AddRecordPage> {
   bool _isLoading = false;
   String? _photoPath; // 记录图片路径
   final ImagePicker _picker = ImagePicker();
+  bool _userEditedTitle = false; // 标题是否被用户手动编辑
+  bool _autoTitleGenerated = false; // 当前标题是否系统生成
 
   @override
   void initState() {
@@ -50,12 +52,45 @@ class _AddRecordPageState extends State<AddRecordPage> {
       _selectedDate = record.date;
       _selectedTurtleId = record.turtleId;
       _photoPath = record.photoPath;
+      _userEditedTitle = true; // 编辑模式视为用户已有标题
     } else {
       // 如果是新记录，默认选择第一只乌龟
       if (widget.turtles.isNotEmpty) {
         _selectedTurtleId = widget.turtles.first.id;
       }
+      // 尝试生成默认标题
+      // 延后到首帧后以确保控件已挂载
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _maybeSetDefaultTitle();
+      });
     }
+  }
+
+  Future<void> _maybeSetDefaultTitle() async {
+    if (_userEditedTitle) return;
+    final turtleId = _selectedTurtleId;
+    if (turtleId == null) return;
+    final turtle = widget.turtles.firstWhere(
+      (t) => t.id == turtleId,
+      orElse: () => widget.turtles.isNotEmpty
+          ? widget.turtles.first
+          : Turtle(
+              id: turtleId,
+              name: '这只龟',
+              species: '',
+              birthDate: DateTime.now(),
+              color: Colors.green,
+            ),
+    );
+    final records = await TurtleService.getRecordsByTurtle(turtleId);
+    final nextIndex = records.length + 1;
+    if (!mounted) return;
+    setState(() {
+      if (_titleController.text.trim().isEmpty || _autoTitleGenerated) {
+        _titleController.text = '${turtle.name} 第$nextIndex次测量';
+        _autoTitleGenerated = true;
+      }
+    });
   }
 
   @override
@@ -88,7 +123,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 乌龟选择卡片
+              // 选择乌龟 + 日期 + 测量 数据 合并卡片
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -107,7 +142,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
                           ),
                           const SizedBox(width: 8),
                           const Text(
-                            '选择乌龟 *',
+                            '基本信息（必选）',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -144,14 +179,152 @@ class _AddRecordPageState extends State<AddRecordPage> {
                             ),
                           );
                         }).toList(),
-                        onChanged: (value) {
+                        onChanged: (value) async {
                           setState(() {
                             _selectedTurtleId = value;
                           });
+                          await _maybeSetDefaultTitle();
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return '请选择一只乌龟';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            color: Colors.green.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '记录日期',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: _selectDate,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.date_range,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_selectedDate.year}年${_selectedDate.month}月${_selectedDate.day}日',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: Colors.grey.shade600,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.straighten,
+                            color: Colors.orange.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '测量数据（必填：体重 或 体长+体宽）',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _weightController,
+                              decoration: InputDecoration(
+                                labelText: '体重（克）',
+                                hintText: '0.0',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.monitor_weight),
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  final weight = double.tryParse(value);
+                                  if (weight == null || weight < 0) {
+                                    return '请输入有效的体重';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _lengthController,
+                              decoration: InputDecoration(
+                                labelText: '体长（厘米）',
+                                hintText: '0.0',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.straighten),
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  final length = double.tryParse(value);
+                                  if (length == null || length < 0) {
+                                    return '请输入有效的体长';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _widthController,
+                        decoration: InputDecoration(
+                          labelText: '体宽（厘米）',
+                          hintText: '0.0',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.width_full),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            final width = double.tryParse(value);
+                            if (width == null || width < 0) {
+                              return '请输入有效的体宽';
+                            }
                           }
                           return null;
                         },
@@ -260,71 +433,8 @@ class _AddRecordPageState extends State<AddRecordPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // 日期选择卡片
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: Colors.green.shade600,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            '记录日期',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      InkWell(
-                        onTap: _selectDate,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.date_range,
-                                color: Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_selectedDate.year}年${_selectedDate.month}月${_selectedDate.day}日',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const Spacer(),
-                              Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.grey.shade600,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 16),
-
-              // 基本信息卡片
+              // 标题/描述/备注（选填）
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -343,7 +453,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
                           ),
                           const SizedBox(width: 8),
                           const Text(
-                            '基本信息',
+                            '标题/描述/备注（选填）',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -355,185 +465,38 @@ class _AddRecordPageState extends State<AddRecordPage> {
                       TextFormField(
                         controller: _titleController,
                         decoration: InputDecoration(
-                          labelText: '标题 *',
-                          hintText: '例如：第一次测量、换壳记录等',
+                          labelText: '标题',
+                          hintText: '留空将自动生成，例如：小绿 第3次测量',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           prefixIcon: const Icon(Icons.title),
+                          helperText: _autoTitleGenerated ? '已自动生成标题，你也可以手动修改' : null,
                         ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return '请输入标题';
-                          }
-                          return null;
+                        onChanged: (_) {
+                          _userEditedTitle = true;
+                          _autoTitleGenerated = false;
                         },
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
                         decoration: InputDecoration(
-                          labelText: '描述 *',
-                          hintText: '详细描述这次记录的内容',
+                          labelText: '描述',
+                          hintText: '详细描述这次记录的内容（可留空）',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           prefixIcon: const Icon(Icons.description),
                         ),
                         maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return '请输入描述';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 测量数据卡片
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.straighten,
-                            color: Colors.orange.shade600,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            '测量数据（可选）',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _weightController,
-                              decoration: InputDecoration(
-                                labelText: '体重（克）',
-                                hintText: '0.0',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                prefixIcon: const Icon(Icons.monitor_weight),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  final weight = double.tryParse(value);
-                                  if (weight == null || weight < 0) {
-                                    return '请输入有效的体重';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lengthController,
-                              decoration: InputDecoration(
-                                labelText: '体长（厘米）',
-                                hintText: '0.0',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                prefixIcon: const Icon(Icons.straighten),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  final length = double.tryParse(value);
-                                  if (length == null || length < 0) {
-                                    return '请输入有效的体长';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _widthController,
-                        decoration: InputDecoration(
-                          labelText: '体宽（厘米）',
-                          hintText: '0.0',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          prefixIcon: const Icon(Icons.width_full),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            final width = double.tryParse(value);
-                            if (width == null || width < 0) {
-                              return '请输入有效的体宽';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 备注卡片
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.note,
-                            color: Colors.purple.shade600,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            '备注（可选）',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _notesController,
                         decoration: InputDecoration(
                           labelText: '备注',
-                          hintText: '记录其他重要信息...',
+                          hintText: '记录其他信息（可留空）',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -595,8 +558,25 @@ class _AddRecordPageState extends State<AddRecordPage> {
   }
 
   Future<void> _saveRecord() async {
+    // 数值格式校验
     if (!_formKey.currentState!.validate()) {
       return;
+    }
+
+    // 必填规则：体重 或 体长+体宽
+    final hasWeight = _weightController.text.trim().isNotEmpty;
+    final hasLength = _lengthController.text.trim().isNotEmpty;
+    final hasWidth = _widthController.text.trim().isNotEmpty;
+    if (!hasWeight && !(hasLength && hasWidth)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请填写体重，或同时填写体长和体宽')),
+      );
+      return;
+    }
+
+    // 如果标题为空，尝试自动生成
+    if (_titleController.text.trim().isEmpty) {
+      await _maybeSetDefaultTitle();
     }
 
     setState(() {

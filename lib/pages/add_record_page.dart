@@ -1,0 +1,450 @@
+import 'package:flutter/material.dart';
+import '../models/turtle_record.dart';
+import '../services/turtle_service.dart';
+
+class AddRecordPage extends StatefulWidget {
+  final TurtleRecord? recordToEdit;
+  final VoidCallback onSaved;
+
+  const AddRecordPage({
+    Key? key,
+    this.recordToEdit,
+    required this.onSaved,
+  }) : super(key: key);
+
+  @override
+  State<AddRecordPage> createState() => _AddRecordPageState();
+}
+
+class _AddRecordPageState extends State<AddRecordPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _lengthController = TextEditingController();
+  final _widthController = TextEditingController();
+  final _notesController = TextEditingController();
+  
+  DateTime _selectedDate = DateTime.now();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.recordToEdit != null) {
+      final record = widget.recordToEdit!;
+      _titleController.text = record.title;
+      _descriptionController.text = record.description;
+      _weightController.text = record.weight?.toString() ?? '';
+      _lengthController.text = record.length?.toString() ?? '';
+      _widthController.text = record.width?.toString() ?? '';
+      _notesController.text = record.notes ?? '';
+      _selectedDate = record.date;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _weightController.dispose();
+    _lengthController.dispose();
+    _widthController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.recordToEdit != null;
+    
+    return Scaffold(
+      backgroundColor: Colors.green.shade50,
+      appBar: AppBar(
+        title: Text(isEditing ? '编辑记录' : '添加记录'),
+        backgroundColor: Colors.green.shade600,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 日期选择卡片
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            color: Colors.green.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '记录日期',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: _selectDate,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.date_range,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_selectedDate.year}年${_selectedDate.month}月${_selectedDate.day}日',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: Colors.grey.shade600,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 基本信息卡片
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            color: Colors.blue.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '基本信息',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: InputDecoration(
+                          labelText: '标题 *',
+                          hintText: '例如：第一次测量、换壳记录等',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.title),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '请输入标题';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: InputDecoration(
+                          labelText: '描述 *',
+                          hintText: '详细描述这次记录的内容',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.description),
+                        ),
+                        maxLines: 3,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '请输入描述';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 测量数据卡片
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.straighten,
+                            color: Colors.orange.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '测量数据（可选）',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _weightController,
+                              decoration: InputDecoration(
+                                labelText: '体重（克）',
+                                hintText: '0.0',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.monitor_weight),
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  final weight = double.tryParse(value);
+                                  if (weight == null || weight < 0) {
+                                    return '请输入有效的体重';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _lengthController,
+                              decoration: InputDecoration(
+                                labelText: '体长（厘米）',
+                                hintText: '0.0',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.straighten),
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  final length = double.tryParse(value);
+                                  if (length == null || length < 0) {
+                                    return '请输入有效的体长';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _widthController,
+                        decoration: InputDecoration(
+                          labelText: '体宽（厘米）',
+                          hintText: '0.0',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.width_full),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            final width = double.tryParse(value);
+                            if (width == null || width < 0) {
+                              return '请输入有效的体宽';
+                            }
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 备注卡片
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.note,
+                            color: Colors.purple.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '备注（可选）',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: InputDecoration(
+                          labelText: '备注',
+                          hintText: '记录其他重要信息...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.note_add),
+                        ),
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // 保存按钮
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveRecord,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          isEditing ? '更新记录' : '保存记录',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      locale: const Locale('zh', 'CN'),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _saveRecord() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final record = TurtleRecord(
+        id: widget.recordToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        date: _selectedDate,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        weight: _weightController.text.isEmpty ? null : double.parse(_weightController.text),
+        length: _lengthController.text.isEmpty ? null : double.parse(_lengthController.text),
+        width: _widthController.text.isEmpty ? null : double.parse(_widthController.text),
+        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      );
+
+      if (widget.recordToEdit != null) {
+        await TurtleService.updateRecord(record);
+      } else {
+        await TurtleService.addRecord(record);
+      }
+
+      widget.onSaved();
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('保存失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}

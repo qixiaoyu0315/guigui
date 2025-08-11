@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 import '../models/turtle_record.dart';
+import '../models/turtle.dart';
 import '../pages/record_detail_page.dart';
 
 class TurtleTree extends StatelessWidget {
   final List<TurtleRecord> records;
+  final List<Turtle> turtles;
+  final List<String> selectedTurtleIds; // 选中显示的乌龟ID列表
   final VoidCallback onRefresh;
 
   const TurtleTree({
     Key? key,
     required this.records,
+    required this.turtles,
+    required this.selectedTurtleIds,
     required this.onRefresh,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    if (records.isEmpty) {
+    // 过滤出选中乌龟的记录
+    final filteredRecords = records
+        .where((record) => selectedTurtleIds.contains(record.turtleId))
+        .toList();
+
+    if (filteredRecords.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -26,7 +36,9 @@ class TurtleTree extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '还没有记录哦\n点击右下角按钮添加第一条记录',
+              selectedTurtleIds.isEmpty 
+                  ? '请选择要显示的乌龟'
+                  : '选中的乌龟还没有记录\n点击右下角按钮添加第一条记录',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -57,12 +69,13 @@ class TurtleTree extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final record = records[index];
-                  final isLast = index == records.length - 1;
+                  final record = filteredRecords[index];
+                  final turtle = _getTurtleById(record.turtleId);
+                  final isLast = index == filteredRecords.length - 1;
                   
-                  return _buildTreeNode(context, record, index, isLast);
+                  return _buildTreeNode(context, record, turtle, index, isLast);
                 },
-                childCount: records.length,
+                childCount: filteredRecords.length,
               ),
             ),
           ),
@@ -71,7 +84,15 @@ class TurtleTree extends StatelessWidget {
     );
   }
 
-  Widget _buildTreeNode(BuildContext context, TurtleRecord record, int index, bool isLast) {
+  Turtle? _getTurtleById(String turtleId) {
+    try {
+      return turtles.firstWhere((turtle) => turtle.id == turtleId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Widget _buildTreeNode(BuildContext context, TurtleRecord record, Turtle? turtle, int index, bool isLast) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -90,8 +111,8 @@ class TurtleTree extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.brown.shade300,
-                          Colors.brown.shade600,
+                          (turtle?.color ?? Colors.brown).withOpacity(0.6),
+                          turtle?.color ?? Colors.brown,
                         ],
                       ),
                     ),
@@ -105,13 +126,13 @@ class TurtleTree extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [
-                        Colors.green.shade400,
-                        Colors.green.shade600,
+                        (turtle?.color ?? Colors.green).withOpacity(0.7),
+                        turtle?.color ?? Colors.green,
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.shade300.withOpacity(0.5),
+                        color: (turtle?.color ?? Colors.green).withOpacity(0.5),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -132,8 +153,8 @@ class TurtleTree extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.brown.shade600,
-                          Colors.brown.shade300,
+                          turtle?.color ?? Colors.brown,
+                          (turtle?.color ?? Colors.brown).withOpacity(0.6),
                         ],
                       ),
                     ),
@@ -181,13 +202,29 @@ class TurtleTree extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                record.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    record.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  if (turtle != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      turtle.name,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: turtle.color,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                             Text(

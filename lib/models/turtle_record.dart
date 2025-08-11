@@ -1,5 +1,6 @@
 class TurtleRecord {
   final String id;
+  final String turtleId; // 所属乌龟的ID
   final DateTime date;
   final String title;
   final String description;
@@ -11,6 +12,7 @@ class TurtleRecord {
 
   TurtleRecord({
     required this.id,
+    required this.turtleId,
     required this.date,
     required this.title,
     required this.description,
@@ -24,6 +26,7 @@ class TurtleRecord {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'turtleId': turtleId,
       'date': date.toIso8601String(),
       'title': title,
       'description': description,
@@ -38,6 +41,7 @@ class TurtleRecord {
   factory TurtleRecord.fromJson(Map<String, dynamic> json) {
     return TurtleRecord(
       id: json['id'],
+      turtleId: json['turtleId'] ?? '', // 兼容旧数据
       date: DateTime.parse(json['date']),
       title: json['title'],
       description: json['description'],

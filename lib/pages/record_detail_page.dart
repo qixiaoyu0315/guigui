@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/turtle_record.dart';
+import '../models/turtle.dart';
 import '../services/turtle_service.dart';
+import '../services/turtle_management_service.dart';
 import 'add_record_page.dart';
 
 class RecordDetailPage extends StatelessWidget {
@@ -25,12 +27,14 @@ class RecordDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () {
+            onPressed: () async {
+              final turtles = await TurtleManagementService.getTurtles();
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddRecordPage(
                     recordToEdit: record,
+                    turtles: turtles,
                     onSaved: () {
                       onRefresh();
                       Navigator.pop(context);

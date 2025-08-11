@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/turtle_record.dart';
+import '../models/turtle.dart';
 import '../services/turtle_service.dart';
 
 class AddRecordPage extends StatefulWidget {
   final TurtleRecord? recordToEdit;
+  final List<Turtle> turtles;
   final VoidCallback onSaved;
 
   const AddRecordPage({
     Key? key,
     this.recordToEdit,
+    required this.turtles,
     required this.onSaved,
   }) : super(key: key);
 
@@ -26,6 +29,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
   final _notesController = TextEditingController();
   
   DateTime _selectedDate = DateTime.now();
+  String? _selectedTurtleId;
   bool _isLoading = false;
 
   @override
@@ -40,6 +44,12 @@ class _AddRecordPageState extends State<AddRecordPage> {
       _widthController.text = record.width?.toString() ?? '';
       _notesController.text = record.notes ?? '';
       _selectedDate = record.date;
+      _selectedTurtleId = record.turtleId;
+    } else {
+      // 如果是新记录，默认选择第一只乌龟
+      if (widget.turtles.isNotEmpty) {
+        _selectedTurtleId = widget.turtles.first.id;
+      }
     }
   }
 
@@ -73,6 +83,80 @@ class _AddRecordPageState extends State<AddRecordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 乌龟选择卡片
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.pets,
+                            color: Colors.green.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '选择乌龟 *',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedTurtleId,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.pets),
+                        ),
+                        hint: const Text('请选择一只乌龟'),
+                        items: widget.turtles.map((turtle) {
+                          return DropdownMenuItem<String>(
+                            value: turtle.id,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: turtle.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('${turtle.name} (${turtle.species})'),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedTurtleId = value;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '请选择一只乌龟';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // 日期选择卡片
               Card(
                 elevation: 2,
@@ -417,6 +501,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
     try {
       final record = TurtleRecord(
         id: widget.recordToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        turtleId: _selectedTurtleId!,
         date: _selectedDate,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),

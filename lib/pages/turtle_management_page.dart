@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../models/turtle.dart';
 import '../services/turtle_management_service.dart';
 import 'add_turtle_page.dart';
@@ -206,24 +207,31 @@ class _TurtleManagementPageState extends State<TurtleManagementPage> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          turtle.color.withOpacity(0.7),
-                          turtle.color,
-                        ],
+                  // 头像：优先使用照片，否则使用原有渐变圆圈
+                  if (turtle.photoPath != null && turtle.photoPath!.isNotEmpty)
+                    CircleAvatar(
+                      radius: 25,
+                      backgroundImage: FileImage(File(turtle.photoPath!)),
+                    )
+                  else
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            turtle.color.withOpacity(0.7),
+                            turtle.color,
+                          ],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.pets,
+                        color: Colors.white,
+                        size: 24,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.pets,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(

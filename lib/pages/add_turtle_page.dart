@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/turtle.dart';
 import '../services/turtle_management_service.dart';
@@ -26,6 +28,8 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
   DateTime _selectedBirthDate = DateTime.now();
   Color _selectedColor = Turtle.availableColors[0];
   bool _isLoading = false;
+  String? _photoPath; // 头像路径
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -37,6 +41,7 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
       _descriptionController.text = turtle.description ?? '';
       _selectedBirthDate = turtle.birthDate;
       _selectedColor = turtle.color;
+      _photoPath = turtle.photoPath;
     } else {
       // 为新乌龟分配随机颜色
       _initializeRandomColor();
@@ -146,6 +151,95 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
                           }
                           return null;
                         },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // 头像（可选）
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_circle,
+                            color: Colors.teal.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '头像（可选）',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (_photoPath != null)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _photoPath = null;
+                                });
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('移除'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.teal.shade50,
+                            backgroundImage: _photoPath != null ? FileImage(File(_photoPath!)) : null,
+                            child: _photoPath == null
+                                ? Icon(Icons.pets, color: Colors.teal.shade400, size: 36)
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                    if (image != null) {
+                                      setState(() {
+                                        _photoPath = image.path;
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.photo_library),
+                                  label: const Text('从相册选择'),
+                                ),
+                                const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final XFile? image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+                                    if (image != null) {
+                                      setState(() {
+                                        _photoPath = image.path;
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.photo_camera),
+                                  label: const Text('拍照'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -534,6 +628,7 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
         birthDate: _selectedBirthDate,
         color: _selectedColor,
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+        photoPath: _photoPath,
       );
 
       if (widget.turtleToEdit != null) {

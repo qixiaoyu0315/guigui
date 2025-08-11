@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../models/turtle_record.dart';
 import '../models/turtle.dart';
 import '../models/sort_option.dart';
@@ -268,6 +269,19 @@ class TurtleTree extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
+                        // 照片展示（如有）
+                        if (record.photoPath != null && record.photoPath!.isNotEmpty) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(record.photoPath!),
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         Text(
                           record.description,
                           style: TextStyle(

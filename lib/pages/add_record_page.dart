@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../models/turtle_record.dart';
 import '../models/turtle.dart';
 import '../services/turtle_service.dart';
@@ -31,6 +33,8 @@ class _AddRecordPageState extends State<AddRecordPage> {
   DateTime _selectedDate = DateTime.now();
   String? _selectedTurtleId;
   bool _isLoading = false;
+  String? _photoPath; // 记录图片路径
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -45,6 +49,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
       _notesController.text = record.notes ?? '';
       _selectedDate = record.date;
       _selectedTurtleId = record.turtleId;
+      _photoPath = record.photoPath;
     } else {
       // 如果是新记录，默认选择第一只乌龟
       if (widget.turtles.isNotEmpty) {
@@ -156,6 +161,106 @@ class _AddRecordPageState extends State<AddRecordPage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // 照片（可选）
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.photo,
+                            color: Colors.orange.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '照片（可选）',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (_photoPath != null)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _photoPath = null;
+                                });
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('移除'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_photoPath != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(_photoPath!),
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 120,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade200),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '未选择照片',
+                              style: TextStyle(color: Colors.orange.shade700),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                              if (image != null) {
+                                setState(() {
+                                  _photoPath = image.path;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('从相册选择'),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final XFile? image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+                              if (image != null) {
+                                setState(() {
+                                  _photoPath = image.path;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.photo_camera),
+                            label: const Text('拍照'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
 
               // 日期选择卡片
               Card(
@@ -508,6 +613,7 @@ class _AddRecordPageState extends State<AddRecordPage> {
         weight: _weightController.text.isEmpty ? null : double.parse(_weightController.text),
         length: _lengthController.text.isEmpty ? null : double.parse(_lengthController.text),
         width: _widthController.text.isEmpty ? null : double.parse(_widthController.text),
+        photoPath: _photoPath,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 

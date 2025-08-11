@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/turtle_record.dart';
-import '../models/turtle.dart';
 import '../services/turtle_service.dart';
 import '../services/turtle_management_service.dart';
 import 'add_record_page.dart';

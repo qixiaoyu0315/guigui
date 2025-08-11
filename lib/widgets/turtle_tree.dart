@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/turtle_record.dart';
 import '../models/turtle.dart';
+import '../models/sort_option.dart';
+import '../utils/record_sorter.dart';
 import '../pages/record_detail_page.dart';
 
 class TurtleTree extends StatelessWidget {
   final List<TurtleRecord> records;
   final List<Turtle> turtles;
   final List<String> selectedTurtleIds; // 选中显示的乌龟ID列表
+  final SortConfig sortConfig; // 排序配置
   final VoidCallback onRefresh;
 
   const TurtleTree({
@@ -14,6 +17,7 @@ class TurtleTree extends StatelessWidget {
     required this.records,
     required this.turtles,
     required this.selectedTurtleIds,
+    required this.sortConfig,
     required this.onRefresh,
   }) : super(key: key);
 
@@ -23,8 +27,15 @@ class TurtleTree extends StatelessWidget {
     final filteredRecords = records
         .where((record) => selectedTurtleIds.contains(record.turtleId))
         .toList();
+    
+    // 应用自定义排序
+    final sortedRecords = RecordSorter.sortRecords(
+      filteredRecords,
+      turtles,
+      sortConfig,
+    );
 
-    if (filteredRecords.isEmpty) {
+    if (sortedRecords.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -69,13 +80,13 @@ class TurtleTree extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final record = filteredRecords[index];
+                  final record = sortedRecords[index];
                   final turtle = _getTurtleById(record.turtleId);
-                  final isLast = index == filteredRecords.length - 1;
+                  final isLast = index == sortedRecords.length - 1;
                   
                   return _buildTreeNode(context, record, turtle, index, isLast);
                 },
-                childCount: filteredRecords.length,
+                childCount: sortedRecords.length,
               ),
             ),
           ),
@@ -227,12 +238,32 @@ class TurtleTree extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            Text(
-                              '${record.date.month}/${record.date.day}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${record.date.month}/${record.date.day}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                if (sortConfig.option != SortOption.recordDate) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    RecordSorter.getSortValueDisplay(
+                                      record,
+                                      turtle,
+                                      sortConfig.option,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.blue.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ),

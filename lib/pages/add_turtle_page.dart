@@ -36,6 +36,23 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
       _descriptionController.text = turtle.description ?? '';
       _selectedBirthDate = turtle.birthDate;
       _selectedColor = turtle.color;
+    } else {
+      // 为新乌龟分配随机颜色
+      _initializeRandomColor();
+    }
+  }
+
+  Future<void> _initializeRandomColor() async {
+    try {
+      final existingTurtles = await TurtleManagementService.getTurtles();
+      setState(() {
+        _selectedColor = Turtle.getRandomUnusedColor(existingTurtles);
+      });
+    } catch (e) {
+      // 如果获取失败，使用默认颜色
+      setState(() {
+        _selectedColor = Turtle.availableColors[0];
+      });
     }
   }
 

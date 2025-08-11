@@ -55,7 +55,27 @@ class Turtle {
     Colors.pink,
     Colors.amber,
     Colors.cyan,
+    Colors.deepOrange,
+    Colors.lightGreen,
+    Colors.deepPurple,
+    Colors.brown,
+    Colors.blueGrey,
   ];
+
+  // 获取未使用的随机颜色
+  static Color getRandomUnusedColor(List<Turtle> existingTurtles) {
+    final usedColors = existingTurtles.map((turtle) => turtle.color).toSet();
+    final unusedColors = availableColors.where((color) => !usedColors.contains(color)).toList();
+    
+    if (unusedColors.isNotEmpty) {
+      unusedColors.shuffle();
+      return unusedColors.first;
+    } else {
+      // 如果所有预定义颜色都用完了，生成随机颜色
+      final random = DateTime.now().millisecondsSinceEpoch;
+      return Color((random & 0xFFFFFF) | 0xFF000000);
+    }
+  }
 
   // 获取年龄（天数）
   int get ageInDays {

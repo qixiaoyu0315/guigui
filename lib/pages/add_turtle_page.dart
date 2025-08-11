@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/turtle.dart';
 import '../services/turtle_management_service.dart';
 
@@ -245,42 +246,136 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: Turtle.availableColors.map((color) {
-                          final isSelected = color == _selectedColor;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedColor = color;
-                              });
-                            },
+                        children: [
+                          // 预定义颜色选项
+                          ...Turtle.availableColors.map((color) {
+                            final isSelected = color == _selectedColor;
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedColor = color;
+                                });
+                              },
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.black : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: color.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: isSelected
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 24,
+                                      )
+                                    : null,
+                              ),
+                            );
+                          }).toList(),
+                          // 自定义颜色选择器按钮
+                          GestureDetector(
+                            onTap: _showColorPicker,
                             child: Container(
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: color,
+                                color: Colors.grey.shade200,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? Colors.black : Colors.transparent,
-                                  width: 3,
+                                  color: Colors.grey.shade400,
+                                  width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: color.withOpacity(0.3),
+                                    color: Colors.grey.withOpacity(0.3),
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),
                                 ],
                               ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: Colors.white,
-                                      size: 24,
-                                    )
-                                  : null,
+                              child: Icon(
+                                Icons.add,
+                                color: Colors.grey.shade600,
+                                size: 24,
+                              ),
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // 当前选中颜色预览
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _selectedColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _selectedColor.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: _selectedColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _selectedColor.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '当前选中的颜色',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: _selectedColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (!Turtle.availableColors.contains(_selectedColor))
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _selectedColor.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '自定义',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _selectedColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -379,6 +474,47 @@ class _AddTurtlePageState extends State<AddTurtlePage> {
         _selectedBirthDate = picked;
       });
     }
+  }
+
+  void _showColorPicker() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        Color tempColor = _selectedColor;
+        return AlertDialog(
+          title: const Text('选择自定义颜色'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: _selectedColor,
+              onColorChanged: (Color color) {
+                tempColor = color;
+              },
+              pickerAreaHeightPercent: 0.8,
+              enableAlpha: false,
+              displayThumbColor: true,
+              paletteType: PaletteType.hsvWithHue,
+              labelTypes: const [],
+              hexInputBar: true,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedColor = tempColor;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _saveTurtle() async {

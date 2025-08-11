@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/turtle.dart';
 import '../services/turtle_management_service.dart';
 import 'add_turtle_page.dart';
+import 'turtle_growth_chart_page.dart';
 
 class TurtleManagementPage extends StatefulWidget {
   const TurtleManagementPage({Key? key}) : super(key: key);
@@ -212,11 +213,30 @@ class _TurtleManagementPageState extends State<TurtleManagementPage> {
                             ),
                           ),
                         );
+                      } else if (value == 'chart') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TurtleGrowthChartPage(
+                              turtle: turtle,
+                            ),
+                          ),
+                        );
                       } else if (value == 'delete') {
                         _showDeleteDialog(turtle);
                       }
                     },
                     itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'chart',
+                        child: Row(
+                          children: [
+                            Icon(Icons.show_chart, size: 20, color: Colors.green),
+                            SizedBox(width: 8),
+                            Text('成长图表', style: TextStyle(color: Colors.green)),
+                          ],
+                        ),
+                      ),
                       const PopupMenuItem(
                         value: 'edit',
                         child: Row(
@@ -254,6 +274,50 @@ class _TurtleManagementPageState extends State<TurtleManagementPage> {
                     Icons.date_range,
                     '出生: ${turtle.birthDate.month}/${turtle.birthDate.day}',
                     Colors.blue,
+                  ),
+                  const Spacer(),
+                  // 成长图表按钮
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TurtleGrowthChartPage(
+                            turtle: turtle,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: turtle.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: turtle.color.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.show_chart,
+                            size: 16,
+                            color: turtle.color,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '图表',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: turtle.color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
